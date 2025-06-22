@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Inflation Shield AI</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-color: #f8f8f8;
+      --card-color: #fff;
+      --text-color: #000;
+    }
+
+    body.dark {
+      --bg-color: #181818;
+      --card-color: #242424;
+      --text-color: #eee;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+    }
+
+    .sidebar {
+      width: 220px;
+      background: var(--card-color);
+      padding: 20px;
+      height: 100vh;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: fixed;
+      left: 0;
+      top: 0;
+    }
+
+    .nav-links {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-color);
+      font-size: 1.05rem;
+      padding: 10px;
+      border-radius: 8px;
+      transition: 0.3s ease;
+    }
+
+    .sidebar-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sidebar-bottom span {
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .main-content {
+      margin-left: 220px; /* Push right to make space for sidebar */
+      width: calc(100% - 220px); /* Take up the remaining space */
+      display: flex;
+      height: 100vh;
+      gap: 20px;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    
+
+    .left-column {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      height: 100%; /* ✅ NEW: ensures children can stretch properly */
+    }
+
+    .graph-container, .score-panel {
+      background: var(--card-color);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    .score-panel {
+      flex: 1;  /* ⬅️ Makes it grow to fill space */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: center;
+      background: var(--card-color);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+
+    .score-panel h3 {
+      margin-top: 0;
+    }
+
+    .right-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ai-chat {
+      flex: 1;
+      background: var(--card-color);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .chat-box {
+      background: var(--card-color); /* 🔄 Previously hardcoded */
+      color: var(--text-color);
+      border-radius: 6px;
+      padding: 10px;
+      min-height: 60px;
+      margin-bottom: 10px;
+      white-space: pre-wrap;
+    }
+
+
+    input, select, button {
+      padding: 10px;
+      font-size: 1rem;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0;
+      right: 0; bottom: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+
+    .switch input:checked + .slider {
+      background-color: #4CAF50;
+    }
+
+    .switch input:checked + .slider:before {
+      transform: translateX(22px);
+    }
+
+    /* Shared input styles */
+    input[type="text"],
+    input[type="number"],
+    select {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 1rem;
+      background-color: var(--card-color);
+      color: var(--text-color);
+      transition: border-color 0.3s, background-color 0.3s;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: #4CAF50;
+    }
+
+    /* Dark mode enhancements */
+    body.dark input,
+    body.dark select {
+      border-color: #444;
+      background-color: #2a2a2a;
+      color: #eee;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.1s ease;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    body.dark button {
+      background-color: #5bd35b;
+      color: #181818;
+    }
+
+    body.dark button:hover {
+      background-color: #4fc24f;
+    }
+
+    .back-button {
+      background-color: #f1f3f4;
+      border: 1px solid #dadce0;
+      color: #202124;
+      padding: 6px 16px;
+      border-radius: 24px;
+      font-size: 1.1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s, box-shadow 0.2s;
+      box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    }
+
+    .back-button:hover {
+      background-color: #e8eaed;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    body.dark .back-button {
+      background-color: #3c4043;
+      border: 1px solid #5f6368;
+      color: #e8eaed;
+    }
+
+    body.dark .back-button:hover {
+      background-color: #5f6368;
+    }
+
+  </style>
+</head>
+
+<body>
+  <!-- 🚪 Sidebar -->
+  <div class="sidebar">
+    <div class="nav-links">
+      <a href="#" class="active">🏠 Home</a>
+      <a href="#">🎓 Education</a>
+      <a href="#">📁 Placeholder 1</a>
+      <a href="#">⚙️ Placeholder 2</a>
+    </div>
+
+    <div class="sidebar-bottom" style="align-items: center;">
+      <span class="material-icons">settings</span>
+
+      <!-- 🌙 Dark Mode with toggle -->
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span class="material-icons">dark_mode</span>
+        <label class="switch">
+          <input type="checkbox" id="darkModeToggleSidebar">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <span class="material-icons">person</span>
+    </div>
+  </div>
+
+
+  <!-- 📄 Main Area -->
+  <div class="main-content">
+    <!-- ⬅️ Left Column: Graph + Score -->
+    <div class="left-column">
+      <!-- 📊 Graph -->
+      <div class="graph-container">
+
+        <!-- ✅ Chart UI Block -->
+        <div id="graphContent">
+          <h2>📊 Compare Your Money Over Time</h2>
+
+          <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 12px;">
+            <input id="compare-amount" type="number" value="10000" style="flex: 1; padding: 10px; font-size: 1rem;" />
+            <select id="currency" style="padding: 10px; font-size: 1rem;">
+              <option value="GBP" selected>🇬🇧 Pound sterling</option>
+              <option value="USD">🇺🇸 US Dollar</option>
+            </select>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <label style="display: inline-flex; align-items: center;">
+              ⏳
+              <label class="switch" style="margin: 0 6px;">
+                <input type="checkbox" id="timeModeToggle" onchange="toggleTimeMode()">
+                <span class="slider"></span>
+              </label>
+              <span id="timeModeLabel" style="font-weight: bold;">Past</span>
+            </label>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; gap: 10px; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <div style="width: 14px; height: 14px; background-color: red; border-radius: 2px;"></div>
+              <span>💸 Cash (loses value)</span>
+              <label class="switch" style="margin-left: 6px;">
+                <input type="checkbox" checked onchange="toggleDataset(0)">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <div style="width: 14px; height: 14px; background-color: blue; border-radius: 2px;"></div>
+              <span>🏦 Savings Account</span>
+              <label class="switch" style="margin-left: 6px;">
+                <input type="checkbox" onchange="toggleDataset(1)">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <div style="width: 14px; height: 14px; background-color: green; border-radius: 2px;"></div>
+              <span>📈 Invested</span>
+              <label class="switch" style="margin-left: 6px;">
+                <input type="checkbox" onchange="toggleDataset(2)">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <canvas id="compareChart" height="100"></canvas>
+
+          <!-- ℹ️ Info Button -->
+          <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+            <span class="material-icons"
+                  style="font-size: 32px; color: #007BFF; cursor: pointer;"
+                  onclick="showInfo()">
+              info
+            </span>
+          </div>
+        </div>
+
+        <!-- ℹ️ Info Panel Block -->
+        <div id="graphInfoPanel" style="display: none;">
+          <button onclick="hideInfo()" class="back-button">￩</button>
+          <p>
+            💡 This graph compares the performance of cash, savings, and investments over time. It shows how inflation reduces purchasing power and why investing is often essential to keep up.
+          </p>
+          <ul>
+            <li><b>Cash</b>: loses value due to inflation.</li>
+            <li><b>Savings</b>: usually beats inflation a bit, but not by much.</li>
+            <li><b>Investments</b>: higher risk, but often outpaces inflation.</li>
+          </ul>
+        </div>
+
+      </div>
+
+
+
+      <!-- 🛡️ Score Panel -->
+      <div class="score-panel">
+        <h3>🛡️ Protection Score</h3>
+        <div style="font-size: 48px; font-weight: bold; margin-top: 10px;">76</div>
+        <p style="font-size: 0.95rem;">Based on your current setup</p>
+      </div>
+    </div>
+
+    <!-- ➡️ Right Column: AI Chat -->
+    <div class="right-column">
+      <div class="ai-chat">
+        <h2>🤖 Ask Inflation Shield AI</h2>
+        <div class="chat-box" id="response">AI response will appear here...</div>
+        <div style="display: flex; gap: 10px;">
+          <input type="text" id="message" placeholder="e.g., What should I do with £10,000?" style="flex: 1;" />
+          <button onclick="sendMessage()">Ask</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 💡 Dark Mode Script -->
+    <script>
+      const toggle = document.getElementById('darkModeToggleSidebar');
+      if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark');
+        toggle.checked = true;
+      }
+      toggle.addEventListener('change', () => {
+        document.body.classList.toggle('dark');
+        localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+      });
+    </script>
+
+    <script>
+      const compareCanvas = document.getElementById("compareChart").getContext("2d");
+      const compareInput = document.getElementById("compare-amount");
+
+      let isFuture = false;
+
+      const pastYears = Array.from({ length: 15 }, (_, i) => 2010 + i);
+      const futureYears = Array.from({ length: 11 }, (_, i) => 2024 + i);
+
+      const pastRates = {
+        inflation: [4.6, 5.2, 3.2, 3.1, 2.4, 1.0, 1.8, 3.6, 3.3, 2.6, 1.5, 4.1, 13.8, 11.4, 5.0],
+        savings:   [1.5, 1.5, 1.2, 1.1, 0.9, 0.5, 0.5, 0.6, 0.8, 0.8, 1.0, 1.2, 2.0, 2.5, 3.0],
+        invest:    [5, 4.5, 6, 7, 6, 4, 5, 8, 6, 5, 3, 6, 9, 7, 6]
+      };
+
+      const futureRates = {
+        inflation: Array(11).fill(3.0),
+        savings:   Array(11).fill(3.5),
+        invest:    Array(11).fill(6.5)
+      };
+
+      // US Past and Future Rates
+      const usPastRates = {
+        inflation: [1.6,3.2,2.1,1.5,1.6,0.1,1.3,2.1,2.4,1.8,1.2,7.0,8.0,4.1,2.95],
+        savings:   [0.2,0.5,0.5,0.5,0.5,0.2,0.3,0.4,0.6,0.6,0.6,1.0,1.0,1.0,1.5],
+        invest:    [15,2,16,32,13,1.4,12,22,-4,29,16,27,-18,20,15]
+      };
+
+      const usFutureRates = {
+        inflation: Array(11).fill(2.3), // average 2–3 %
+        savings:   Array(11).fill(1.2), // predict small rises
+        invest:    Array(11).fill(7.0)  // long-term stock return econ assumption
+      };
+
+
+      function calculateValues(start, rates, type) {
+        let values = [start];
+        const inflationRates = isFuture ? getRates().inflation : getRates().inflation;
+
+        rates.forEach((rate, i) => {
+          const last = values[values.length - 1];
+          const inflation = inflationRates[i];
+          let next;
+
+          if (type === "cash") {
+            // cash loses value from inflation directly
+            next = last * (1 - inflation / 100);
+          } else {
+            // savings and invest grow, but inflation eats into it
+            const nominalGrowth = 1 + rate / 100;
+            const inflationImpact = 1 + inflation / 100;
+            const realGrowth = nominalGrowth / inflationImpact;
+            next = last * realGrowth;
+          }
+
+          values.push(parseFloat(next.toFixed(2)));
+        });
+
+        return values;
+      }
+
+
+
+      const compareChart = new Chart(compareCanvas, {
+        type: "line",
+        data: {
+          labels: pastYears,
+          datasets: [
+            {
+              label: "💸 Cash (loses value)",
+              borderColor: "red",
+              backgroundColor: "rgba(255, 0, 0, 0.1)",
+              data: calculateValues(10000, pastRates.inflation, "cash"),
+              hidden: false,
+              fill: true
+            },
+            {
+              label: "🏦 Savings Account",
+              borderColor: "blue",
+              backgroundColor: "rgba(0, 0, 255, 0.1)",
+              data: calculateValues(10000, pastRates.savings, "savings"),
+              hidden: true,
+              fill: true
+            },
+            {
+              label: "📈 Invested",
+              borderColor: "green",
+              backgroundColor: "rgba(0, 128, 0, 0.1)",
+              data: calculateValues(10000, pastRates.invest, "invest"),
+              hidden: true,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: { beginAtZero: false }
+          },
+          plugins: {
+            legend: {
+              display: false  // ⛔️ hide Chart.js legend (but keep datasets)
+            }
+          }
+        }
+      });
+
+      // 💵 Update chart when input changes
+      function getRates() {
+        const currency = document.getElementById("currency").value;
+        if (currency === "USD") {
+          return isFuture ? usFutureRates : usPastRates;
+        } else {
+          return isFuture ? futureRates : pastRates;
+        }
+      }
+
+
+      compareInput.addEventListener("input", () => {
+        const amt = parseFloat(compareInput.value);
+        const rates = getRates();
+        const years = isFuture ? futureYears : pastYears;
+
+        compareChart.data.labels = years;
+        compareChart.data.datasets[0].data = calculateValues(amt, rates.inflation, "cash");
+        compareChart.data.datasets[1].data = calculateValues(amt, rates.savings, "savings");
+        compareChart.data.datasets[2].data = calculateValues(amt, rates.invest, "invest");
+        compareChart.update();
+      });
+
+      function toggleDataset(index) {
+        compareChart.data.datasets[index].hidden = !compareChart.data.datasets[index].hidden;
+        compareChart.update();
+      }
+
+      function toggleTimeMode() {
+        isFuture = !isFuture;
+        const amt = parseFloat(compareInput.value);
+        const rates = getRates();
+        const years = isFuture ? futureYears : pastYears;
+
+        compareChart.data.labels = years;
+        compareChart.data.datasets[0].data = calculateValues(amt, rates.inflation, "cash");
+        compareChart.data.datasets[1].data = calculateValues(amt, rates.savings, "savings");
+        compareChart.data.datasets[2].data = calculateValues(amt, rates.invest, "invest");
+        compareChart.update();
+
+        document.getElementById("timeModeLabel").innerText = isFuture ? "Future" : "Past";
+
+      }
+
+      document.getElementById("currency").addEventListener("change", () => {
+        const amt = parseFloat(compareInput.value);
+        const rates = getRates();
+        const years = isFuture ? futureYears : pastYears;
+
+        compareChart.data.labels = years;
+        compareChart.data.datasets[0].data = calculateValues(amt, rates.inflation, "cash");
+        compareChart.data.datasets[1].data = calculateValues(amt, rates.savings, "savings");
+        compareChart.data.datasets[2].data = calculateValues(amt, rates.invest, "invest");
+        compareChart.update();
+      });
+
+    </script>
+
+  </div>
+
+  <script>
+    function showInfo() {
+      document.getElementById("graphContent").style.display = "none";
+      document.getElementById("graphInfoPanel").style.display = "block";
+    }
+
+    function hideInfo() {
+      document.getElementById("graphContent").style.display = "block";
+      document.getElementById("graphInfoPanel").style.display = "none";
+    }
+  </script>
+
+</body>
+</html>
