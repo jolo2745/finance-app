@@ -471,8 +471,33 @@
             sInv      = root.querySelector('.show-inv'),
             ctx       = root.querySelector('.chart').getContext('2d');
 
+      const savedCurrency = localStorage.getItem('currency');
+      if (savedCurrency && ['GBP', 'USD'].includes(savedCurrency)) {
+        const optionExists = Array.from(currency.options).some(opt => opt.value === savedCurrency);
+        if (optionExists) {
+          currency.value = savedCurrency;
+        }
+      }
+
+
+
+
+
       /* state */
       let isFuture = false;
+
+      const pastYears   = Array.from({length:15}, (_,i)=>2010 + i);
+      const futureYears = Array.from({length:11}, (_,i)=>2024 + i);
+
+
+    
+
+      currency.addEventListener('change', () => {
+        localStorage.setItem('currency', currency.value);
+        refresh();
+      });
+
+
 
       /* ───── data series ───────────────────────────────────────── */
 
